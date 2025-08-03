@@ -486,7 +486,7 @@ body {
 
 .trending-card-title {
   font-size: 1.02rem;
-  max-width: 150px;
+  max-width: 160px;
   color: #b48c13;
   font-weight: bold;
   text-align: center;
@@ -935,6 +935,7 @@ height: 100vh; }
   }
  .product-img-box {
   width: 92%;
+  aspect-ratio: 4/3;
   margin: 0.28rem auto 0.4rem auto; /* even spacing on all sides */
   border: 2.5px solid #776192;         /* light border, clean look */
   border-radius: 10px;
@@ -944,8 +945,23 @@ height: 100vh; }
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  position: relative;
   min-height: 72px; /* or whatever fits your images */
-  max-width: 99%;
+  /* max-width: 99%; */
+}
+
+
+
+.product-img-box img {
+  width: 175%;
+  height: 175%;
+  object-fit: contain;
+  translate: 0 -10px;
+  image-rendering: pixelated;
+  display: block;
+  background: var(--placeholder-color);
+  border-radius: 8px;
 }
 
   .product-main-title {

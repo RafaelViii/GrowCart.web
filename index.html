@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Grow Shop</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css"> 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <!-- PayPal JS SDK -->
+  <script src="https://www.paypal.com/sdk/js?client-id=AejeYnsOkr3vxmm7Jt1VhUubfdzb3aNXp_jAc4Z3OVpiDx0y32HwRTHRo_2oSRJ6X_lQMa6K5PLtZazm&currency=USD"></script>
+</head>
+<body>
+  <header class="shop-header">
+    <span class="brand">
+      <img src="Assets/logo.png" class="brand-logo" alt="Grow Shop Logo">
+      GROW CART
+    </span>
+    <button class="hamburger" aria-label="Menu" id="hamburgerBtn">&#9776;</button>
+    <nav class="shop-nav" id="shopNav">
+      <a href="#" id="navHome">Home</a>
+      <a href="#" id="navShop">Shop</a>
+      <a href="#" id="navAbout">About</a>
+      <a href="#" id="navContact">Contact</a>
+    </nav>
+    <button class="cart-fab" id="cartFab" aria-label="View cart">
+      🛒
+      <span class="cart-count">0</span>
+    </button>
+  </header>
+
+  <div class="cart-drawer" id="cartDrawer" tabindex="-1">
+    <button class="cart-close-btn" id="cartCloseBtn" aria-label="Close cart">&times;</button>
+    <h2>Your Cart</h2>
+    <div id="cartItems"></div>
+    <div class="cart-total" id="cartTotal"></div>
+
+    <form id="userInfoForm" autocomplete="off" style="margin:1em 0;">
+      <label style="font-size:.99em;display:block;margin-bottom:4px;">Roblox Username</label>
+      <input type="text" id="robloxUsername" required style="width:100%;font-size:1.15em;padding:10px;border-radius:6px;margin-bottom:0.5em;background:#222;color:#fff;border:2px solid #333;">
+      <label style="font-size:.99em;display:block;margin-top:18px;margin-bottom:4px;">Email</label>
+      <input type="email" id="userEmail" required style="width:100%;font-size:1.15em;padding:10px;border-radius:6px;margin-bottom:0.5em;background:#222;color:#fff;border:2px solid #333;">
+    </form>
+    <!-- Promo code input -->
+    <div style="margin-bottom:12px;">
+      <input type="text" id="promoCodeInput" placeholder="Enter promo code" style="width:70%;padding:8px;border-radius:5px;border:1.5px solid #d9ad57;font-size:1em;">
+      <button id="applyPromoBtn" type="button" style="padding:8px 15px;border-radius:5px;background:#ffd700;font-weight:bold;border:none;cursor:pointer;">Apply</button>
+      <span id="promoFeedback" style="margin-left:8px;color:#e15679;font-weight:bold;"></span>
+    </div>
+    <div id="paypal-button-container" style="margin:16px 0;"></div>
+  </div>
+  
+  <section class="hero-trendings-section">
+    <div id="home" class="trendings-title">Trending Now!</div>
+    <div class="trendings-scroll" id="trendingsScroll"></div>
+  </section>
+
+  <div id="about" class="website-description">
+    <b>Grow Cart</b> is the official website marketplace by <b>Arriety</b> for our beloved players.<br><br>
+    Here, Roblox players can safely buy, gain points, and discover unique in-game items, pets, and more to enhance their garden adventure.<br><br>
+    Shop with confidence, trade with friends, and help your garden flourish!
+  </div>
+
+  <div class="main-content">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-title">Categories</div>
+      <!-- Category buttons dynamically added by JS -->
+    </aside>
+    <section id="shop" class="products-area">
+      <div class="products-title">Featured Products</div>
+      <div class="product-grid" id="productGrid">
+        <!-- Product cards dynamically added by JS -->
+      </div>
+    </section>
+  </div>
+
+  <footer class="shop-footer" id="contact">
+    <div class="footer-content">
+      <span>&copy; 2023 Retro Mart. All rights reserved.</span>
+      <div>
+        <span>Follow us:</span>
+        <a href="https://twitter.com/your_twitter" class="social-link" target="_blank" aria-label="Twitter">
+          <img src="Assets/contacts/x.svg" alt="Twitter" class="footer-icon">
+        </a>
+        <a href="https://instagram.com/your_instagram" class="social-link" target="_blank" aria-label="Instagram">
+          <img src="Assets/contacts/instagram.svg" alt="Instagram" class="footer-icon">
+        </a>
+        <a href="https://facebook.com/your_facebook" class="social-link" target="_blank" aria-label="Facebook">
+          <img src="Assets/contacts/facebook.svg" alt="Facebook" class="footer-icon">
+        </a>
+        <a href="https://discord.gg/2bnqV5Uhgy" class="social-link" target="_blank" aria-label="Discord">
+          <img src="Assets/contacts/discord.svg" alt="Discord" class="footer-icon">
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Firebase Firestore integration as ES Modules -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC8ciuAyBxAEx29yeK756dhdrKI9ebD9gQ",
+      authDomain: "growcart-19ffd.firebaseapp.com",
+      projectId: "growcart-19ffd",
+      storageBucket: "growcart-19ffd.appspot.com",
+      messagingSenderId: "373536744308",
+      appId: "1:373536744308:web:5e43d8462dcd7f28e08221",
+      measurementId: "G-Q4JDQ62CMF"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const ASSETS_PATH = "Assets/products/";
+    let categories = [];
+    let products = [];
+    let promoList = [];
+    let promoDiscount = 0;
+    let appliedPromo = null;
+
+    // Load PROMOS from Firestore
+    onSnapshot(collection(db, "promos"), (snapshot) => {
+      promoList = [];
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.status === "active") {
+          promoList.push({ code: data.code.toUpperCase(), discount: data.discount });
+        }
+      });
+    });
+
+    // --- Load categories and products from Firestore ---
+    function renderCategoriesSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.innerHTML = '<div class="sidebar-title">Categories</div>';
+      // "All" button
+      const allBtn = document.createElement('button');
+      allBtn.className = 'sidebar-btn active';
+      allBtn.dataset.category = 'all';
+      allBtn.textContent = 'All';
+      sidebar.appendChild(allBtn);
+
+      allBtn.onclick = () => {
+        document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+        allBtn.classList.add('active');
+        renderProductsGrid('all');
+      };
+
+      categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'sidebar-btn';
+        btn.dataset.category = cat.id;
+        btn.textContent = cat.name;
+        btn.onclick = () => {
+          document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderProductsGrid(cat.id);
+        };
+        sidebar.appendChild(btn);
+      });
+    }
+
+    function renderProductsGrid(filterCat = 'all') {
+      const grid = document.getElementById('productGrid');
+      grid.innerHTML = '';
+      products.forEach(prod => {
+        if (filterCat !== 'all' && prod.category !== filterCat) return;
+        const isOutOfStock = (prod.stock || 0) <= 0;
+
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.dataset.category = prod.category;
+        card.dataset.id = prod.id;
+        card.dataset.title = prod.name;
+        card.dataset.price = prod.price;
+        card.dataset.img = ASSETS_PATH + prod.image;
+        card.dataset.stock = prod.stock || 0;
+
+        card.innerHTML = `
+          <div class="product-img-box">
+            <img src="${ASSETS_PATH + prod.image}" alt="${prod.name}" class="product-img">
+            <div class="img-placeholder" style="display:none;"><span>${prod.name}</span></div>
+          </div>
+          <div class="product-main-title">${prod.name}</div>
+          <div class="product-price">$${prod.price}</div>
+          <div class="product-stock" style="color:${isOutOfStock?'#e15679':'#000000bb'};font-weight:600;margin:3px 0 8px 0;font-size:0.75em;">
+            Stock: ${prod.stock || 0}
+          </div>
+          <button class="product-btn" ${isOutOfStock ? 'disabled style="background:#aaa;cursor:not-allowed;"' : ''}>${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</button>
+        `;
+        grid.appendChild(card);
+      });
+
+      // Add robust image onerror handler after rendering
+      document.querySelectorAll('.product-img').forEach(img => {
+        img.onerror = function() {
+          this.style.display = 'none';
+          var p = this.parentNode.querySelector('.img-placeholder');
+          if (p) p.style.display = 'flex';
+        };
+      });
+
+      // Re-attach listeners
+      document.querySelectorAll('.product-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const card = btn.closest('.product-card');
+          const id = card.getAttribute('data-id');
+          const title = card.getAttribute('data-title');
+          const price = parseFloat(card.getAttribute('data-price'));
+          const img = card.getAttribute('data-img');
+          const stock = parseInt(card.getAttribute('data-stock')) || 0;
+          if (stock <= 0) {
+            alert("Sorry, this product is out of stock.");
+            return;
+          }
+          if(cart[id]) {
+            if(cart[id].qty + 1 > stock) {
+              alert("Cannot add more than available stock!");
+              return;
+            }
+            cart[id].qty += 1;
+          } else {
+            cart[id] = {id, title, price, img, qty: 1, stock};
+          }
+          updateCartDisplayWithPayPal();
+        });
+      });
+    }
+
+    function renderTrendingProducts() {
+      const trendingsScroll = document.getElementById('trendingsScroll');
+      trendingsScroll.innerHTML = '';
+      products.filter(p => p.trending).forEach((prod, idx) => {
+        const card = document.createElement('div');
+        card.className = 'trending-card';
+        card.innerHTML = `
+          <div style="position:relative;width:95%;height:90px;">
+            <img src="${ASSETS_PATH + prod.image}" alt="Trending ${idx+1}" class="product-img">
+            <div class="img-placeholder" style="display:none;">Trend<br>${idx+1}</div>
+          </div>
+          <div class="trending-card-title">${prod.name}</div>
+          <div class="trending-card-price">$${prod.price}</div>
+        `;
+        trendingsScroll.appendChild(card);
+      });
+
+      document.querySelectorAll('.product-img').forEach(img => {
+        img.onerror = function() {
+          this.style.display = 'none';
+          var p = this.parentNode.querySelector('.img-placeholder');
+          if (p) p.style.display = 'flex';
+        };
+      });
+    }
+
+    // Firestore live sync
+    onSnapshot(collection(db, "categories"), snapshot => {
+      categories = [];
+      snapshot.forEach(docSnap => {
+        categories.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      renderCategoriesSidebar();
+      renderProductsGrid(document.querySelector('.sidebar-btn.active')?.dataset.category || 'all');
+    });
+
+    onSnapshot(collection(db, "products"), snapshot => {
+      products = [];
+      snapshot.forEach(docSnap => {
+        products.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      renderProductsGrid(document.querySelector('.sidebar-btn.active')?.dataset.category || 'all');
+      renderTrendingProducts();
+    });
+
+    // --- Cart code ---
+    let cart = {};
+    const cartFab = document.getElementById('cartFab');
+    const cartDrawer = document.getElementById('cartDrawer');
+    const cartCloseBtn = document.getElementById('cartCloseBtn');
+    const cartItemsDiv = document.getElementById('cartItems');
+    const cartTotalDiv = document.getElementById('cartTotal');
+    const robloxInput = document.getElementById('robloxUsername');
+    const userEmail = document.getElementById('userEmail');
+    const promoCodeInput = document.getElementById('promoCodeInput');
+    const applyPromoBtn = document.getElementById('applyPromoBtn');
+    const promoFeedback = document.getElementById('promoFeedback');
+
+    function updateCartDisplay() {
+      let count = 0;
+      let total = 0;
+      cartItemsDiv.innerHTML = '';
+      Object.values(cart).forEach(item => {
+        count += item.qty;
+        total += item.qty * item.price;
+      });
+      document.querySelectorAll('.cart-count').forEach(span => {
+        span.textContent = count;
+      });
+
+      if(count === 0) {
+        cartItemsDiv.innerHTML = '<div class="cart-empty">Your cart is empty!</div>';
+        cartTotalDiv.textContent = '';
+        promoFeedback.textContent = '';
+        renderPayPalButton();
+        return;
+      }
+      Object.values(cart).forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'cart-item';
+        el.innerHTML = `
+          <div style="position:relative;width:48px;height:48px;">
+            <img class="cart-item-img" src="${item.img}" alt="${item.title}">
+            <div class="img-placeholder" style="display:none;"><span>${item.title}</span></div>
+          </div>
+          <div class="cart-item-title">${item.title}</div>
+          <div class="cart-item-price">$${(item.price*item.qty).toFixed(2)}</div>
+          <div style="color:#888;font-size:0.98em;">
+            Stock left: ${item.stock - item.qty}
+          </div>
+          <button class="cart-remove-btn" data-id="${item.id}">&times;</button>
+        `;
+        cartItemsDiv.appendChild(el);
+      });
+
+      // Robust image error handler
+      document.querySelectorAll('.cart-item-img').forEach(img => {
+        img.onerror = function() {
+          this.style.display = 'none';
+          var p = this.parentNode.querySelector('.img-placeholder');
+          if (p) p.style.display = 'flex';
+        };
+      });
+
+      let subtotal = total;
+      let discount = 0;
+      if (promoDiscount > 0) {
+        discount = Math.round(subtotal * (promoDiscount/100) * 100) / 100;
+        cartTotalDiv.innerHTML = `
+          <div>Subtotal: $${subtotal.toFixed(2)}</div>
+          <div style="color:#24bb65;font-weight:600;">Promo (-${promoDiscount}%): -$${discount.toFixed(2)}</div>
+          <div style="font-weight:bold;">Total: $${(subtotal-discount).toFixed(2)}</div>
+        `;
+      } else {
+        cartTotalDiv.innerHTML = `Total: $${subtotal.toFixed(2)}`;
+      }
+
+      Array.from(cartItemsDiv.querySelectorAll('.cart-remove-btn')).forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.getAttribute('data-id');
+          delete cart[id];
+          updateCartDisplayWithPayPal();
+        };
+      });
+    }
+
+    cartFab.onclick = () => { cartDrawer.classList.add('open'); };
+    cartCloseBtn.onclick = () => { cartDrawer.classList.remove('open'); };
+
+    // Promo code logic using Firestore PROMOS
+    applyPromoBtn.onclick = function() {
+      const code = promoCodeInput.value.trim().toUpperCase();
+      if(!code) {
+        promoFeedback.textContent = "Please enter a code.";
+        promoFeedback.style.color = "#e15679";
+        promoDiscount = 0;
+        appliedPromo = null;
+        updateCartDisplayWithPayPal();
+        return;
+      }
+      const found = promoList.find(p => p.code === code);
+      if(found) {
+        promoDiscount = found.discount;
+        appliedPromo = code;
+        promoFeedback.textContent = `Promo applied! -${promoDiscount}%`;
+        promoFeedback.style.color = "#24bb65";
+      } else {
+        promoDiscount = 0;
+        appliedPromo = null;
+        promoFeedback.textContent = "Invalid code.";
+        promoFeedback.style.color = "#e15679";
+      }
+      updateCartDisplayWithPayPal();
+    };
+
+    // --- Firestore & Discord webhook ---
+    async function firestoreOrder(order) {
+      await addDoc(collection(db, "orders"), {
+        ...order,
+        created: serverTimestamp(),
+        promo: appliedPromo || "",
+        discount: promoDiscount,
+        status: "pending"
+      });
+    }
+
+    async function sendDiscordWebhook(order) {
+      // Replace with your own webhook
+      const webhookUrl = "https://discord.com/api/webhooks/1401597152123289731/pBFk1IkdFzN37IzPS9a7_KqX-39rgPU-G8-6aDv0WvzBoriWl4B9JZWobbBniO8jJ3D-";
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          content: `**New Order!**
+**Roblox:** ${order.robloxUsername}
+**Email:** ${order.email}
+**Items:** ${order.items.map(i=>`\`${i.title}\` x${i.qty}`).join(", ")}
+**Total:** $${order.total}
+${order.promo ? `**Promo:** ${order.promo} (-${order.discount}%)` : ''}`
+        })
+      });
+    }
+
+    // --- PayPal Button with Discount Fix and 100% off support ---
+    function getCartItemsArray() {
+      if (promoDiscount > 0) {
+        const items = Object.values(cart);
+        let total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+        let totalAfter = total * (1 - promoDiscount/100);
+        let newItems = items.map(item => {
+          const origTotal = item.price * item.qty;
+          const percent = origTotal / total;
+          const discountedTotal = Math.round((totalAfter * percent) * 100) / 100;
+          const unit = Math.round((discountedTotal / item.qty) * 100) / 100;
+          return {
+            name: item.title,
+            unit_amount: { currency_code: "USD", value: unit.toFixed(2) },
+            quantity: item.qty.toString()
+          };
+        });
+        let sum = newItems.reduce((s, it) => s + parseFloat(it.unit_amount.value) * parseInt(it.quantity), 0);
+        let diff = Math.round((totalAfter - sum) * 100) / 100;
+        if (Math.abs(diff) >= 0.01) {
+          let last = newItems[newItems.length-1];
+          last.unit_amount.value = (parseFloat(last.unit_amount.value) + diff / last.quantity).toFixed(2);
+        }
+        return newItems;
+      }
+      return Object.values(cart).map(item => ({
+        name: item.title,
+        unit_amount: { currency_code: "USD", value: item.price.toFixed(2) },
+        quantity: item.qty.toString()
+      }));
+    }
+    function getCartTotal() {
+      let total = Object.values(cart).reduce((sum, item) => sum + item.price * item.qty, 0);
+      if(promoDiscount > 0) total -= total * (promoDiscount/100);
+      return total.toFixed(2);
+    }
+
+    function renderPayPalButton() {
+      const btnDiv = document.getElementById('paypal-button-container');
+      btnDiv.innerHTML = '';
+      if (Object.keys(cart).length === 0) return;
+      if (typeof paypal === "undefined" || !btnDiv) {
+        setTimeout(renderPayPalButton, 200);
+        return;
+      }
+      const total = parseFloat(getCartTotal());
+
+      // Handle 100% discount: show a "Complete Order for Free" button
+      if (total === 0) {
+        btnDiv.innerHTML = '<button id="freeOrderBtn" style="width:100%;padding:14px 0;background:#24bb65;color:#fff;font-size:1.13em;border:none;border-radius:7px;cursor:pointer;font-weight:bold;">Complete Order for Free</button>';
+        document.getElementById('freeOrderBtn').onclick = async function() {
+          if (!robloxInput.value.trim() || !userEmail.value.trim()) {
+            alert("Please enter your Roblox username and email.");
+            return;
+          }
+          const order = {
+            robloxUsername: robloxInput.value.trim(),
+            email: userEmail.value.trim(),
+            items: Object.values(cart),
+            total: getCartTotal(),
+            paypalOrderId: "FREE_ORDER",
+            payer: {name:{given_name:"FREE"},email_address:userEmail.value.trim()},
+            promo: appliedPromo,
+            discount: promoDiscount
+          };
+          await firestoreOrder(order);
+          await sendDiscordWebhook(order);
+
+          // --- DECREMENT STOCK ---
+          for (const item of Object.values(cart)) {
+            const prodRef = doc(db, "products", item.id);
+            const prodSnap = await getDoc(prodRef);
+            if (prodSnap.exists()) {
+              const currentStock = prodSnap.data().stock || 0;
+              const newStock = Math.max(currentStock - item.qty, 0);
+              await updateDoc(prodRef, { stock: newStock });
+            }
+          }
+
+          alert("Order complete! Thank you for your purchase.");
+          cart = {};
+          promoDiscount = 0;
+          appliedPromo = null;
+          promoCodeInput.value = "";
+          promoFeedback.textContent = "";
+          updateCartDisplayWithPayPal();
+          robloxInput.value = "";
+          userEmail.value = "";
+        };
+        return;
+      }
+
+      // Otherwise, render the PayPal button as usual
+      paypal.Buttons({
+        createOrder: function(data, actions) {
+          if (!robloxInput.value.trim() || !userEmail.value.trim()) {
+            alert("Please enter your Roblox username and email.");
+            return;
+          }
+          let itemsArr = getCartItemsArray();
+          return actions.order.create({
+            purchase_units: [{
+              amount: {
+                currency_code: "USD",
+                value: getCartTotal(),
+                breakdown: {
+                  item_total: { currency_code: "USD", value: getCartTotal() }
+                }
+              },
+              items: itemsArr
+            }]
+          });
+        },
+        onApprove: function(data, actions) {
+          return actions.order.capture().then(async function(details) {
+            const order = {
+              robloxUsername: robloxInput.value.trim(),
+              email: userEmail.value.trim(),
+              items: Object.values(cart),
+              total: getCartTotal(),
+              paypalOrderId: data.orderID,
+              payer: details.payer,
+              promo: appliedPromo,
+              discount: promoDiscount
+            };
+            await firestoreOrder(order);
+            await sendDiscordWebhook(order);
+
+            // --- DECREMENT STOCK ---
+            for (const item of Object.values(cart)) {
+              const prodRef = doc(db, "products", item.id);
+              const prodSnap = await getDoc(prodRef);
+              if (prodSnap.exists()) {
+                const currentStock = prodSnap.data().stock || 0;
+                const newStock = Math.max(currentStock - item.qty, 0);
+                await updateDoc(prodRef, { stock: newStock });
+              }
+            }
+
+            alert("Payment complete! Thank you, " + details.payer.name.given_name + ".");
+            cart = {};
+            promoDiscount = 0;
+            appliedPromo = null;
+            promoCodeInput.value = "";
+            promoFeedback.textContent = "";
+            updateCartDisplayWithPayPal();
+            robloxInput.value = "";
+            userEmail.value = "";
+          });
+        }
+      }).render('#paypal-button-container');
+    }
+
+    function updateCartDisplayWithPayPal() {
+      updateCartDisplay();
+      renderPayPalButton();
+    }
+    window.updateCartDisplay = updateCartDisplayWithPayPal;
+    document.addEventListener('DOMContentLoaded', updateCartDisplayWithPayPal);
+
+    // --- SMOOTH NAVIGATION WITH CUSTOM ANIMATION ---
+    function slowScrollToElement(targetId, offset = 0, duration = 1000) {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      const headerOffset = document.querySelector('header').offsetHeight || 0;
+      const elementPosition = target.getBoundingClientRect().top + window.pageYOffset - headerOffset + offset;
+      const startPosition = window.pageYOffset;
+      const distance = elementPosition - startPosition;
+      let start = null;
+
+      function easeInOutQuad(t, b, c, d) {
+        t /= d/2;
+        if (t < 1) return c/2*t*t + b;
+        t--;
+        return -c/2 * (t*(t-2) - 1) + b;
+      }
+
+      function animateScroll(timestamp) {
+        if (!start) start = timestamp;
+        const elapsed = timestamp - start;
+        const run = easeInOutQuad(elapsed, startPosition, distance, duration);
+        window.scrollTo(0, run);
+        if (elapsed < duration) {
+          requestAnimationFrame(animateScroll);
+        } else {
+          window.scrollTo(0, elementPosition);
+        }
+      }
+      requestAnimationFrame(animateScroll);
+    }
+    document.getElementById('navHome').addEventListener('click', function(e) {
+      e.preventDefault(); slowScrollToElement('home', 0, 800);
+    });
+    document.getElementById('navShop').addEventListener('click', function(e) {
+      e.preventDefault(); slowScrollToElement('shop', 0, 800);
+    });
+    document.getElementById('navAbout').addEventListener('click', function(e) {
+      e.preventDefault(); slowScrollToElement('about', 0, 800);
+    });
+    document.getElementById('navContact').addEventListener('click', function(e) {
+      e.preventDefault(); slowScrollToElement('contact', 0, 800);
+    });
+
+    // --- Cart Empty Animation ---
+    function animateCartEmpty() {
+      cartDrawer.classList.remove('cart-empty-anim');
+      void cartDrawer.offsetWidth;
+      cartDrawer.classList.add('cart-empty-anim');
+      setTimeout(() => { cartDrawer.classList.remove('cart-empty-anim'); }, 700);
+      cartDrawer.focus && cartDrawer.focus();
+    }
+  </script>
+  <style>
+    .cart-drawer.cart-empty-anim {
+      animation: cartShake 0.42s cubic-bezier(.36,.07,.19,.97) both;
+      border-left: 3px solid #d18484 !important;
+      box-shadow: -8px 0 24px #e156796c, 0 0 0 4px #fff8e1 inset;
+    }
+    @keyframes cartShake {
+      10%, 90% { transform: translateX(-2px); }
+      20%, 80% { transform: translateX(4px); }
+      30%, 50%, 70% { transform: translateX(-8px); }
+      40%, 60% { transform: translateX(8px); }
+      100% { transform: translateX(0); }
+    }
+  </style>
+</body>
+</html>

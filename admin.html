@@ -310,9 +310,22 @@
       <input type="text" id="addProdName" placeholder="Product name" required>
       <input type="number" id="addProdPrice" placeholder="Price" min="0" step="0.01" required>
       <input type="number" id="addProdStock" placeholder="Stock" min="0" step="1" required>
-      <!-- Image dropdown -->
+      <!-- PHP-generated image dropdown, no JS overwriting -->
       <select id="addProdImg" required>
         <option value="" disabled selected>Image</option>
+        <?php
+          $dir = __DIR__ . '/Assets/products/';
+          $allowed = ['jpg','jpeg','png','gif','webp','svg'];
+          if (is_dir($dir)) {
+            foreach (scandir($dir) as $file) {
+              if ($file === '.' || $file === '..') continue;
+              $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+              if (in_array($ext, $allowed)) {
+                echo "<option value=\"".htmlspecialchars($file)."\">".htmlspecialchars($file)."</option>\n";
+              }
+            }
+          }
+        ?>
       </select>
       <label><input type="checkbox" id="addProdTrend"> Trending?</label>
       <button class="btn" type="submit">Add Product</button>
@@ -359,40 +372,6 @@ const db = getFirestore(app);
 
 // Use Assets/products/ for all product images
 const ASSETS_PATH = "Assets/products/";
-
-// List all images available for products in Assets/products/
-const AVAILABLE_IMAGES = [
-  "car.jpg",
-  "coolcar.jpg",
-  "hunter.jpg",
-  "pogi.jpg",
-  "trex.png",
-  "spinosaurus.png",
-  "redfox.png",
-  "racoon.png",
-  "mimicoctopus.png",
-  "kitsune.png",
-  "fennecfox.png",
-  "corruptedkitsune.png",
-  "dragonfly.png",
-  "discofly.png",
-  "discobee.png",
-  "queenbee.png",
-  "butterfly.png",
-  "744Trillion.png",
-  "2.2Quadtrillion.png",
-  "1.4Quadtrillion.png",
-  // Add all product images here (exact filenames in Assets/products/)
-];
-
-// Populate product image dropdown from Assets/products/
-function renderAssetsOptions() {
-  const select = document.getElementById('addProdImg');
-  select.innerHTML = '<option value="" disabled selected>Image</option>';
-  AVAILABLE_IMAGES.forEach(img => {
-    select.innerHTML += `<option value="${img}">${img}</option>`;
-  });
-}
 
 // --- Categories ---
 let categories = [];
@@ -632,9 +611,6 @@ document.getElementById('addProdForm').onsubmit = async function(e) {
   document.getElementById('addProdCat').selectedIndex = 0;
   document.getElementById('addProdTrend').checked = false;
 };
-
-// Initial assets dropdown
-renderAssetsOptions();
 
 // --- Orders ---
 let orders = [];
